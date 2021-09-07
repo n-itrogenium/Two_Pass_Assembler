@@ -14,11 +14,11 @@ class Section {
 public:
 	string name;
 	int size;
-	vector<byte> bytes;
+	vector<int8_t> bytes;
 	vector<Relocation*> relocationTable;
 
 	Section(string name);
-	void addByte(byte newByte);
+	void addByte(int8_t newByte);
 	static void printRelocationTable(std::ofstream& outfile, std::map<string, Section*> sections);
 	static void printSections(std::ofstream& outfile, std::map<string, Section*> sections);
 };

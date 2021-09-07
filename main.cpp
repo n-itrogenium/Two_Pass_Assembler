@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <cstring>
 #include "assembler.h"
 
 int main(int argc, char* argv[]) {
@@ -24,6 +25,8 @@ int main(int argc, char* argv[]) {
 
 	infile.close();
 	outfile.close();
+
+	std::cout << "Happy ending!" << std::endl;
 
 	return 0;
 }

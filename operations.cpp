@@ -20,7 +20,7 @@ Operand* Operation::analyzeOperand(string operand, bool isJump, SymbolTable* sym
 		op->addrMode = IMMED;
 
 		// $<literal>
-		if (std::regex_match(operand, std::regex("^[0-9]+$"))) {
+		if (std::regex_match(operand, std::regex("^([0-9]+|0x[0-9A-Fa-f]+)$"))) {
 			op->rep = LITERAL;
 			op->dataHigh = (stoi(operand) & 0xFF00) >> 8;
 			op->dataLow = stoi(operand) & 0xFF;
@@ -58,7 +58,7 @@ Operand* Operation::analyzeOperand(string operand, bool isJump, SymbolTable* sym
 		operand = operand.substr(1);
 		operand.pop_back();
 		std::remove_if(operand.begin(), operand.end(), isspace);
-		if (!std::regex_match(operand, std::regex("^[rR][0-7]+(\++([0-9]+$|[a-zA-Z]+[a-zA-Z0-9]*$))?"))) {
+		if (!std::regex_match(operand, std::regex("^[rR][0-7]+(\\++([0-9]+$|0x[0-9A-Fa-f]+$|[a-zA-Z]+[a-zA-Z0-9]*$))?"))) {
 			std::cerr << "ERROR! Wrong operand" << std::endl;
 			exit(3);
 		}
@@ -67,20 +67,22 @@ Operand* Operation::analyzeOperand(string operand, bool isJump, SymbolTable* sym
 		op->bytes = 1;
 
 		// [<reg> + <literal>]
-		if (std::regex_match(operand, std::regex("^[rR][0-7]+\++[0-9]+$"))) {
+		if (std::regex_match(operand, std::regex("^[rR][0-7]+\\++([0-9]+$|0x[0-9A-Fa-f]+$)"))) {
 			op->rep = LITERAL;
 			op->addrMode = REGINDPOM;
-			op->dataHigh = (stoi(operand) & 0xFF00) >> 8;
-			op->dataLow = stoi(operand) & 0xFF;
+			op->value = operand.substr(3);
+			op->dataHigh = (stoi(op->value) & 0xFF00) >> 8;
+			op->dataLow = stoi(op->value) & 0xFF;
 			op->bytes += (op->dataHigh != 0) ? 2 : 1;
 		}
 		else
 			// [<reg> + <symbol>]
-			if (std::regex_match(operand, std::regex("^[rR][0-7]+\++[a-zA-Z]+[a-zA-Z0-9]*$"))) {
+			if (std::regex_match(operand, std::regex("^[rR][0-7]+\\++[a-zA-Z]+[a-zA-Z0-9]*$"))) {
 				op->rep = SYMBOL;
 				op->addrMode = REGINDPOM;
 				op->bytes += 1;
-				Symbol* symbol = symbolTable->find(operand);
+				op->value = operand.substr(3);
+				Symbol* symbol = symbolTable->find(op->value);
 				if (symbol) {
 					if (symbol->defined) {
 						op->dataHigh = (symbol->offset & 0xFF00) >> 8;
@@ -89,7 +91,7 @@ Operand* Operation::analyzeOperand(string operand, bool isJump, SymbolTable* sym
 					}
 				}
 				else {
-					symbolTable->insert(operand, nullptr, 0, 'L');
+					symbolTable->insert(op->value, nullptr, 0, 'L');
 				}
 			}
 		// [<reg>]
@@ -105,7 +107,7 @@ Operand* Operation::analyzeOperand(string operand, bool isJump, SymbolTable* sym
 			exit(3);
 		}
 		operand = operand.substr(1);
-
+		op->value = operand;
 		// *<reg>
 		if (std::regex_match(operand, std::regex("^[rR][0-7]$"))) {
 			op->addrMode = REGDIR;
@@ -113,7 +115,7 @@ Operand* Operation::analyzeOperand(string operand, bool isJump, SymbolTable* sym
 			op->reg = operand[1] - '0';
 		}
 		// *<literal>
-		else if (std::regex_match(operand, std::regex("^[0-9]+$"))) {
+		else if (std::regex_match(operand, std::regex("^([0-9]+|0x[0-9A-Fa-f]+)$"))) {
 			op->addrMode = MEMDIR;
 			op->rep = LITERAL;
 			op->dataHigh = (stoi(operand) & 0xFF00) >> 8;
@@ -145,28 +147,30 @@ Operand* Operation::analyzeOperand(string operand, bool isJump, SymbolTable* sym
 			operand = operand.substr(1);
 			operand.pop_back();
 			std::remove_if(operand.begin(), operand.end(), isspace);
-			if (!std::regex_match(operand, std::regex("^[rR][0-7]+(\++([0-9]+$|[a-zA-Z]+[a-zA-Z0-9]*$))?"))) {
+			if (!std::regex_match(operand, std::regex("^[rR][0-7]+(\\++([0-9]+$|0x[0-9A-Fa-f]+$|[a-zA-Z]+[a-zA-Z0-9]*$))?"))) {
 				std::cerr << "ERROR! Wrong operand" << std::endl;
 				exit(3);
 			}
-
+			op->value = operand;
 			op->bytes = 1;
 
 			// *[<reg> + <literal>]
-			if (std::regex_match(operand, std::regex("^[rR][0-7]+\++[0-9]+$"))) {
+			if (std::regex_match(operand, std::regex("^[rR][0-7]+\\++([0-9]+$|0x[0-9A-Fa-f]+$)"))) {
 				op->rep = LITERAL;
 				op->addrMode = REGINDPOM;
-				op->dataHigh = (stoi(operand) & 0xFF00) >> 8;
-				op->dataLow = stoi(operand) & 0xFF;
+				op->value = operand.substr(3);
+				op->dataHigh = (stoi(op->value) & 0xFF00) >> 8;
+				op->dataLow = stoi(op->value) & 0xFF;
 				op->bytes += (op->dataHigh != 0) ? 2 : 1;
 			}
 			else
 				// *[<reg> + <symbol>]
-				if (std::regex_match(operand, std::regex("^[rR][0-7]+\++[a-zA-Z]+[a-zA-Z0-9]*$"))) {
+				if (std::regex_match(operand, std::regex("^[rR][0-7]+\\++[a-zA-Z]+[a-zA-Z0-9]*$"))) {
 					op->rep = SYMBOL;
 					op->addrMode = REGINDPOM;
 					op->bytes += 1;
-					Symbol* symbol = symbolTable->find(operand);
+					op->value = operand.substr(3);
+					Symbol* symbol = symbolTable->find(op->value);
 					if (symbol) {
 						if (symbol->defined) {
 							op->dataHigh = (symbol->offset & 0xFF00) >> 8;
@@ -175,7 +179,7 @@ Operand* Operation::analyzeOperand(string operand, bool isJump, SymbolTable* sym
 						}
 					}
 					else {
-						symbolTable->insert(operand, nullptr, 0, 'L');
+						symbolTable->insert(op->value, nullptr, 0, 'L');
 					}
 				}
 			// *[<reg>]
@@ -188,19 +192,23 @@ Operand* Operation::analyzeOperand(string operand, bool isJump, SymbolTable* sym
 			exit(3);
 		}
 
-		op->value = operand;
-
 		result = op;
 		break;
 	}
 	case '%': {
-		// TO DO
-		/* op->rep = PCREL_SYMBOL;
-		op->dataLow = -2 & 0xFF;
+		operand = operand.substr(1);
+		if (!std::regex_match(operand, std::regex("^[a-zA-Z]+[a-zA-Z0-9]*$"))) {
+			std::cerr << "ERROR! Wrong operand" << std::endl;
+			exit(3);
+		}
+		op->rep = PCREL_SYMBOL;
+		op->addrMode = isJump ? IMMED : MEMDIR;
 		op->dataHigh = (-2 & 0xFF00) >> 8;
+		op->dataLow = -2 & 0xFF;
 		op->bytes = 3;
-		// PROVERITI DA LI NEKAD TREBA -1
-		*/
+		op->value = operand;
+		result = op;
+		// PROVERITI DA LI NEKAD TREBA -1 ILI NESTO STO NIJE -2
 		break;
 	}
 	default: {
@@ -212,7 +220,7 @@ Operand* Operation::analyzeOperand(string operand, bool isJump, SymbolTable* sym
 			op->reg = operand[1] - '0';
 		}
 		// <literal>
-		else if (std::regex_match(operand, std::regex("^[0-9]+$"))) {
+		else if (std::regex_match(operand, std::regex("^([0-9]+|0x[0-9A-Fa-f]+)$"))) {
 			op->rep = LITERAL;
 			op->addrMode = isJump ? IMMED : MEMDIR;
 			op->dataHigh = (stoi(operand) & 0xFF00) >> 8;

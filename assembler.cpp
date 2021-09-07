@@ -8,13 +8,15 @@
 
 /* ============================= FIRST PASS ============================== */
 
-void Assembler::firstPass(std::ifstream &inputFile, std::ofstream &outputFile) {
-	symbolTable = new SymbolTable();
-	locationCounter = 0;
-	currentSection = nullptr;
-	absSymbols = new Section("abs_symbols");
-	end = false;
+SymbolTable* Assembler::symbolTable = new SymbolTable();
+int Assembler::locationCounter = 0;
+Section* Assembler::currentSection = nullptr;
+Section* Assembler::absSymbols = new Section("abssymb");
+bool Assembler::end = false;
+std::map<string, Section*> Assembler::sections = {};
 
+void Assembler::firstPass(std::ifstream &inputFile, std::ofstream &outputFile) {
+	std::cout << "First pass starts!" << std::endl;
 	string line;
 
 	while (std::getline(inputFile, line) && !end) {
@@ -26,6 +28,9 @@ void Assembler::firstPass(std::ifstream &inputFile, std::ofstream &outputFile) {
 		string word;
 
 		if (iss >> word) {
+			// COMMENT
+			if (word.front() == '#')
+				continue;
 
 			if (word.front() == ':') {
 				std::cerr << "ERROR! Invalid first character ':'" << std::endl;
@@ -48,11 +53,14 @@ void Assembler::firstPass(std::ifstream &inputFile, std::ofstream &outputFile) {
 				word.pop_back();
 
 				Symbol* symbol = symbolTable->find(word);
-				if (!symbol)
+				if (!symbol) {
 					symbolTable->insert(word, currentSection, locationCounter, 'L');
-				/*else {
-					Proverava da li je globalni simbol definisan ili ne,
-					ali pošto je labela, verovatno nema potrebe za ovim
+					symbol = symbolTable->find(word);
+				}
+				symbol->defined = true;
+				/*else if (symbol->scope == 'G') {
+					std::cerr << "ERROR! Label already in use" << std::endl;
+					exit(3);
 				}*/
 
 				if (!(iss >> word)) // Provera da li je labela prazna
@@ -78,6 +86,7 @@ void Assembler::firstPass(std::ifstream &inputFile, std::ofstream &outputFile) {
 
 	symbolTable->printTable(outputFile);
 
+	std::cout << "First pass ends!" << std::endl;
 }
 
 
@@ -193,7 +202,7 @@ bool Assembler::processDirective1(string word, std::istringstream& iss) {
 					symbolTable->insert(word, currentSection, 0, 'L');
 				}
 			}
-			else if (!std::regex_match(word, std::regex("^[0-9]+$"))) {
+			else if (!std::regex_match(word, std::regex("^([0-9]+|0x[0-9A-Fa-f]+)$"))) {
 				std::cerr << "ERROR! Expected a symbol or literal" << std::endl;
 				exit(3);
 			} 
@@ -218,7 +227,7 @@ bool Assembler::processDirective1(string word, std::istringstream& iss) {
 			std::cerr << "ERROR! Expected a token" << std::endl;
 			exit(3);
 		}
-		if (std::regex_match(word, std::regex("^[0-9]+$"))) {
+		if (std::regex_match(word, std::regex("^([0-9]+|0x[0-9A-Fa-f]+)$"))) {
 			locationCounter += stoi(word);
 		}
 		else {
@@ -248,18 +257,18 @@ bool Assembler::processDirective1(string word, std::istringstream& iss) {
 			if (!symbol) {
 				symbolTable->insert(word, absSymbols, 0, 'L'); // PROVERITI OFFSET
 				symbol = symbolTable->find(word);
-				symbol->defined = true;
 			}
 			else if (symbol->scope == 'E') {
 				std::cerr << "ERROR! Symbol already defined externally" << std::endl;
 				exit(3);
 			}
+			symbol->defined = true;
 			if (!(iss >> word)) {
 				std::cerr << "ERROR! Expected a token" << std::endl;
 				exit(3);
 			}
-			if (std::regex_match(word, std::regex("^[0-9]+$"))) {
-				symbol->offset = stoi(word); // videti da li ce biti offset ili dodatno polje value
+			if (std::regex_match(word, std::regex("^([0-9]+|0x[0-9A-Fa-f]+)$"))) {
+				symbol->offset = stoi(word); // ovde treba offset u tabeli apsolutnih simbola
 			}
 			else {
 				std::cerr << "ERROR! Expected a literal" << std::endl;
@@ -282,7 +291,9 @@ bool Assembler::processDirective1(string word, std::istringstream& iss) {
 		return true;
 	}
 
-	case NOTFOUND: return false;
+	case NOTFOUND: 
+	default:
+		return false;
 	}
 }
 
@@ -318,11 +329,15 @@ bool Assembler::processInstruction1(string word, std::istringstream& iss) {
 	}
 
 	case CALL: case JMP: case JEQ: case JNE: case JGT: {
-		if (!(iss >> word)) {
+		string operand = "";
+		while (iss >> word) {
+			operand.append(word);
+		}
+		if (operand == "") {
 			std::cerr << "ERROR! Expected an operand" << std::endl;
 			exit(3);
 		}
-		Operand* op = Operation::analyzeOperand(word, true, symbolTable);
+		Operand* op = Operation::analyzeOperand(operand, true, symbolTable);
 		if (!op) {
 			std::cerr << "ERROR! Expected an operand" << std::endl;
 			exit(3);
@@ -376,11 +391,15 @@ bool Assembler::processInstruction1(string word, std::istringstream& iss) {
 			std::cerr << "ERROR! Expected a register" << std::endl;
 			exit(3);
 		}
-		if (!(iss >> word)) {
+		string operand = "";
+		while (iss >> word) {
+			operand.append(word);
+		}
+		if (operand == "") {
 			std::cerr << "ERROR! Expected an operand" << std::endl;
 			exit(3);
 		}
-		op = Operation::analyzeOperand(word, false, symbolTable);
+		op = Operation::analyzeOperand(operand, false, symbolTable);
 		if (!op) {
 			std::cerr << "ERROR! Expected an operand" << std::endl;
 			exit(3);
@@ -388,7 +407,9 @@ bool Assembler::processInstruction1(string word, std::istringstream& iss) {
 		locationCounter += 2 + op->bytes;
 		return true;
 	}
-	case ILLEGAL: return false;
+	case ILLEGAL: 
+	default:
+		return false;
 	}
 }
 
@@ -397,6 +418,8 @@ bool Assembler::processInstruction1(string word, std::istringstream& iss) {
 
 
 void Assembler::secondPass(std::ifstream& inputFile, std::ofstream& outputFile) {
+	std::cout << "Second pass starts!" << std::endl;
+	inputFile.clear();
 	inputFile.seekg(0);
 	end = false;
 	string line;
@@ -409,6 +432,10 @@ void Assembler::secondPass(std::ifstream& inputFile, std::ofstream& outputFile) 
 		string word;
 
 		if (iss >> word) {
+			// COMMENT
+			if (word.front() == '#')
+				continue;
+
 			// LABEL
 			if (word.back() == ':') {
 				if (!(iss >> word))
@@ -426,6 +453,8 @@ void Assembler::secondPass(std::ifstream& inputFile, std::ofstream& outputFile) 
 	}
 	Section::printRelocationTable(outputFile, sections);
 	Section::printSections(outputFile, sections);
+
+	std::cout << "Second pass ends!" << std::endl;
 }
 
 bool Assembler::processDirective2(string word, std::istringstream& iss) {
@@ -484,12 +513,14 @@ bool Assembler::processDirective2(string word, std::istringstream& iss) {
 		end = true;
 		return true;
 	}
-	case NOTFOUND: return false;
+	case NOTFOUND: 
+	default:
+		return false;
 	}
 }
 
 bool Assembler::processInstruction2(string word, std::istringstream& iss) {
-	byte InstrDescr, RegsDescr, AddrMode, DataHigh, DataLow;
+	int8_t InstrDescr, RegsDescr, AddrMode, DataHigh, DataLow;
 	Instructions instruction = getInstructionIndex(word);
 	InstrDescr = getCode(instruction);
 
@@ -515,9 +546,12 @@ bool Assembler::processInstruction2(string word, std::istringstream& iss) {
 		return true;
 	}
 	case CALL: case JMP: case JEQ: case JNE: case JGT: {
-		iss >> word;
+		string operand = "";
+		while (iss >> word) {
+			operand.append(word);
+		}
 		bool isJump = (instruction == CALL) ? false : true;
-		Operand* op = Operation::analyzeOperand(word, isJump, symbolTable);
+		Operand* op = Operation::analyzeOperand(operand, isJump, symbolTable);
 		RegsDescr = 0xF0 | op->reg;
 		AddrMode = op->addrMode & 0x0F; // 0 => UUUU
 		DataHigh = op->dataHigh;
@@ -525,18 +559,18 @@ bool Assembler::processInstruction2(string word, std::istringstream& iss) {
 		currentSection->addByte(InstrDescr);
 		currentSection->addByte(RegsDescr);
 		currentSection->addByte(AddrMode);
-		if (DataHigh != 0) {
-			currentSection->addByte(DataHigh);
+		if (op->bytes == 5) {
 			currentSection->addByte(DataLow);
+			currentSection->addByte(DataHigh);
 		}
-		else if (DataLow != 0)
+		else if (op->bytes == 4)
 			currentSection->addByte(DataLow);
 
 		if (op->rep == SYMBOL || op->rep == PCREL_SYMBOL) {
-			Symbol* symbol = symbolTable->find(word); // SACUVATI NEGDE SIMBOL i to koristiti umesto word
+			Symbol* symbol = symbolTable->find(op->value);
 			Relocation* rel = new Relocation();
 			rel->offset = currentSection->bytes.size();
-			rel->type = (op->rep == PCREL_SYMBOL) ? PC_REL : ABS; // OBRADITI %
+			rel->type = (op->rep == PCREL_SYMBOL) ? PC_REL : ABS; 
 			rel->value = symbol->ordinal;
 			currentSection->relocationTable.push_back(rel);
 		}
@@ -569,8 +603,11 @@ bool Assembler::processInstruction2(string word, std::istringstream& iss) {
 		word.pop_back();
 		RegsDescr = (word[1] - '0') << 4;
 
-		iss >> word;
-		Operand* op = Operation::analyzeOperand(word, false, symbolTable);
+		string operand = "";
+		while (iss >> word) {
+			operand.append(word);
+		}
+		Operand* op = Operation::analyzeOperand(operand, false, symbolTable);
 		RegsDescr |= op->reg;
 		AddrMode = op->addrMode & 0x0F;
 		DataHigh = op->dataHigh;
@@ -578,18 +615,18 @@ bool Assembler::processInstruction2(string word, std::istringstream& iss) {
 		currentSection->addByte(InstrDescr);
 		currentSection->addByte(RegsDescr);
 		currentSection->addByte(AddrMode);
-		if (DataHigh != 0) {
-			currentSection->addByte(DataHigh);
+		if (op->bytes == 5) {
 			currentSection->addByte(DataLow);
+			currentSection->addByte(DataHigh);
 		}
-		else if (DataLow != 0)
+		else if (op->bytes == 4)
 			currentSection->addByte(DataLow);
 
 		if (op->rep == SYMBOL || op->rep == PCREL_SYMBOL) {
-			Symbol* symbol = symbolTable->find(word); // SACUVATI NEGDE SIMBOL i to koristiti umesto word
+			Symbol* symbol = symbolTable->find(op->value); 
 			Relocation* rel = new Relocation();
 			rel->offset = currentSection->bytes.size();
-			rel->type = (op->rep == PCREL_SYMBOL) ? PC_REL : ABS; // OBRADITI %
+			rel->type = (op->rep == PCREL_SYMBOL) ? PC_REL : ABS; 
 			rel->value = symbol->ordinal;
 			currentSection->relocationTable.push_back(rel);
 		}
@@ -600,7 +637,9 @@ bool Assembler::processInstruction2(string word, std::istringstream& iss) {
 	case POP: {
 		return true;
 	}
-	case ILLEGAL: return false;
+	case ILLEGAL: 
+	default:
+		return false;
 	}
 
 }
@@ -649,7 +688,7 @@ Instructions Assembler::getInstructionIndex(string instruction) {
 	return ILLEGAL;
 }
 
-byte Assembler::getCode(Instructions instruction) {
+int8_t Assembler::getCode(Instructions instruction) {
 	if (instruction == HALT) return 0x00;
 	if (instruction == INT) return 0x10;
 	if (instruction == IRET) return 0x20;
@@ -674,4 +713,5 @@ byte Assembler::getCode(Instructions instruction) {
 	if (instruction == SHR) return 0x91;
 	if (instruction == LDR) return 0xA0;
 	if (instruction == STR) return 0xB0;
+	return 0xFF;
 }

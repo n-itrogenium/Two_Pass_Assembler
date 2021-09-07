@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <string>
-#include "symboltable.h";
+#include "symboltable.h"
 #include "operations.h"
 
 using std::string;
@@ -18,13 +18,12 @@ enum Instructions {
 };
 
 class Assembler {
-private:
+public:
 	static SymbolTable* symbolTable;
 	static int locationCounter;
 	static Section *currentSection, *absSymbols;
 	static std::map<string, Section*> sections;
 	static bool end;
-public:
 	static void firstPass(std::ifstream &inputFile, std::ofstream &outputFile);
 	static void secondPass(std::ifstream &inputFile, std::ofstream &outputFile);
 	static bool processDirective1(string word, std::istringstream &iss);
@@ -33,7 +32,7 @@ public:
 	static bool processInstruction2(string word, std::istringstream& iss);
 	static Directives getDirectiveIndex(string directive);
 	static Instructions getInstructionIndex(string instruction);
-	static byte getCode(Instructions instruction);
+	static int8_t getCode(Instructions instruction);
 };
 
 #endif

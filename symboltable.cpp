@@ -33,6 +33,7 @@ void SymbolTable::printTable(std::ofstream &outfile) {
 	outfile << setw(10) << setfill(' ') << "Offset";
 	outfile << setw(10) << setfill(' ') << "Oblast";
 	outfile << setw(10) << setfill(' ') << "R. br.";
+	outfile << setw(10) << setfill(' ') << "Definisan";
 	outfile << std::endl << std::endl;
 
 	std::map<string, Symbol*>::iterator i;
@@ -42,6 +43,7 @@ void SymbolTable::printTable(std::ofstream &outfile) {
 		outfile << setw(10) << setfill(' ') << i->second->offset;
 		outfile << setw(10) << setfill(' ') << i->second->scope;
 		outfile << setw(10) << setfill(' ') << i->second->ordinal;
+		outfile << setw(10) << setfill(' ') << i->second->defined;
 		outfile << std::endl;
 	}
 	outfile << std::endl;
