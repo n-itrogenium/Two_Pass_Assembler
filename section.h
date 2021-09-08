@@ -20,7 +20,7 @@ public:
 	Section(string name);
 	void addByte(int8_t newByte);
 	static void printRelocationTable(std::ofstream& outfile, std::map<string, Section*> sections);
-	static void printSections(std::ofstream& outfile, std::map<string, Section*> sections);
+	static void printSections(std::ostream& outfile, std::map<string, Section*> sections);
 };
 
 #endif

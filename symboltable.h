@@ -19,9 +19,8 @@ public:
 };
 
 class SymbolTable {
-private:
-	std::map<string, Symbol*> table;
 public:
+	std::map<string, Symbol*> table;
 	Symbol* find(string name);
 	void insert(string name, Section* section, int locationCounter, char scope);
 	bool isDefined();

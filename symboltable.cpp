@@ -27,14 +27,14 @@ bool SymbolTable::isDefined() {
 }
 
 void SymbolTable::printTable(std::ofstream &outfile) {
-	outfile << "Tabela simbola" << std::endl;
-	outfile << setw(10) << setfill(' ') << "Labela";
-	outfile << setw(10) << setfill(' ') << "Sekcija";
+	outfile << "========================SYMBOL TABLE========================" << std::endl;
+	outfile << setw(10) << setfill(' ') << "Label";
+	outfile << setw(10) << setfill(' ') << "Section";
 	outfile << setw(10) << setfill(' ') << "Offset";
-	outfile << setw(10) << setfill(' ') << "Oblast";
-	outfile << setw(10) << setfill(' ') << "R. br.";
-	outfile << setw(10) << setfill(' ') << "Definisan";
-	outfile << std::endl << std::endl;
+	outfile << setw(10) << setfill(' ') << "Scope";
+	outfile << setw(10) << setfill(' ') << "Ordinal";
+	outfile << setw(10) << setfill(' ') << "Defined";
+	outfile << std::endl << "------------------------------------------------------------" << std::endl;
 
 	std::map<string, Symbol*>::iterator i;
 	for (i = table.begin(); i != table.end(); i++) {
@@ -46,7 +46,7 @@ void SymbolTable::printTable(std::ofstream &outfile) {
 		outfile << setw(10) << setfill(' ') << i->second->defined;
 		outfile << std::endl;
 	}
-	outfile << std::endl;
+	outfile << std::endl << std::endl << std::endl;
 }
 
 Symbol::Symbol(string name, Section* section, int offset, char scope) {
