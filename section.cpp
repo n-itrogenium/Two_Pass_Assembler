@@ -18,7 +18,7 @@ void Section::addByte(int8_t newByte) {
 }
 
 void Section::printRelocationTable(std::ofstream& outfile, std::map<string, Section*> sections) {
-	outfile << "======================RELOCATION TABLE======================" << endl;
+	outfile << "===========================RELOCATION TABLE===========================" << endl;
 
 	std::map<string, Section*>::iterator i;
 	for (i = sections.begin(); i != sections.end(); i++) {
@@ -44,7 +44,7 @@ void Section::printRelocationTable(std::ofstream& outfile, std::map<string, Sect
 }
 
 void Section::printSections(std::ostream& outfile, std::map<string, Section*> sections) {
-	outfile << "===========================SECTIONS==========================" << endl;
+	outfile << "===============================SECTIONS===============================" << endl;
 	std::map<string, Section*>::iterator i;
 	for (i = sections.begin(); i != sections.end(); i++) {
 		Section* section = i->second;

@@ -27,21 +27,22 @@ bool SymbolTable::isDefined() {
 }
 
 void SymbolTable::printTable(std::ofstream &outfile) {
-	outfile << "========================SYMBOL TABLE========================" << std::endl;
-	outfile << setw(10) << setfill(' ') << "Label";
-	outfile << setw(10) << setfill(' ') << "Section";
+	outfile << "=============================SYMBOL TABLE=============================" << std::endl;
+	outfile << setw(15) << setfill(' ') << "Label";
+	outfile << setw(15) << setfill(' ') << "Section";
 	outfile << setw(10) << setfill(' ') << "Offset";
 	outfile << setw(10) << setfill(' ') << "Scope";
 	outfile << setw(10) << setfill(' ') << "Ordinal";
 	outfile << setw(10) << setfill(' ') << "Defined";
-	outfile << std::endl << "------------------------------------------------------------" << std::endl;
+	outfile << std::endl << "----------------------------------------------------------------------" << std::endl;
 
 	std::map<string, Symbol*>::iterator i;
 	for (i = table.begin(); i != table.end(); i++) {
-		outfile << setw(10) << setfill(' ') << i->second->name;
-		outfile << setw(10) << setfill(' ') << i->second->section;
+		char scope = (i->second->scope == 'E') ? 'G' : i->second->scope;
+		outfile << setw(15) << setfill(' ') << i->second->name;
+		outfile << setw(15) << setfill(' ') << i->second->section;
 		outfile << setw(10) << setfill(' ') << i->second->offset;
-		outfile << setw(10) << setfill(' ') << i->second->scope;
+		outfile << setw(10) << setfill(' ') << scope;
 		outfile << setw(10) << setfill(' ') << i->second->ordinal;
 		outfile << setw(10) << setfill(' ') << i->second->defined;
 		outfile << std::endl;

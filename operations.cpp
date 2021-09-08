@@ -243,8 +243,17 @@ Operand* Operation::analyzeOperand(string operand, bool isJump, SymbolTable* sym
 		op->dataLow = -2 & 0xFF;
 		op->bytes = 2;
 		op->value = operand;
+		Symbol* symbol = symbolTable->find(operand);
+		if (symbol) {
+			if (symbol->defined) {
+				op->dataHigh = ((symbol->offset - 2) >> 8) & 0xFF;
+				op->dataLow = (symbol->offset - 2) & 0xFF;
+			}
+		}
+		else {
+			symbolTable->insert(op->value, nullptr, 0, 'L');
+		}
 		result = op;
-		// PROVERITI DA LI NEKAD TREBA -1 ILI NESTO STO NIJE -2
 		break;
 	}
 	default: {

@@ -122,7 +122,7 @@ bool Assembler::processDirective1(string word, std::istringstream& iss) {
 			char scope = (directive == GLOBAL) ? 'G' : 'E';
 
 			if (!symbol) {
-				symbolTable->insert(word, currentSection, offset, scope);
+				symbolTable->insert(word, nullptr, offset, scope);
 				if (scope == 'E')
 					symbolTable->find(word)->defined = true;
 			}
@@ -135,7 +135,7 @@ bool Assembler::processDirective1(string word, std::istringstream& iss) {
 				if (scope == 'E' || (scope == 'G' && !symbol->defined)) {
 					symbol->offset = offset;
 					symbol->section = "?";
-					symbol->defined = true;
+					symbol->defined = (scope == 'E') ? true : false;
 				}
 			}
 			identifierExists = true;
@@ -212,7 +212,6 @@ bool Assembler::processDirective1(string word, std::istringstream& iss) {
 				std::cerr << "ERROR! Expected a symbol or literal" << std::endl;
 				exit(3);
 			} 
-			// proveriti da nije slucajno neki registar naveden
 			locationCounter += 2;
 			identifierExists = true;
 		}
@@ -334,8 +333,9 @@ bool Assembler::processInstruction1(string word, std::istringstream& iss) {
 		std::cerr << "ERROR! Instruction out of section" << std::endl;
 		exit(3);
 	}
+	Instructions instruction = getInstructionIndex(word);
 
-	switch (getInstructionIndex(word)) {
+	switch (instruction) {
 
 	case HALT: case IRET: case RET: {
 		if (iss >> word) {
@@ -357,6 +357,9 @@ bool Assembler::processInstruction1(string word, std::istringstream& iss) {
 			exit(3);
 		}
 		locationCounter += 2;
+		if (instruction == PUSH || instruction == POP)
+			locationCounter++;
+		
 		return true; 
 	}
 
@@ -510,14 +513,15 @@ bool Assembler::processDirective2(string word, std::istringstream& iss) {
 				word.pop_back(); // Oduzimamo ','
 			if (std::regex_match(word, std::regex("^[a-zA-Z_]+[a-zA-Z0-9_]*$"))) { // symbol
 				Symbol* symbol = symbolTable->find(word);
+				if (symbol->section != absSymbols->name) {
+					Relocation *rel = new Relocation();
+					rel->offset = currentSection->bytes.size();
+					rel->type = ABS;
+					rel->value = (symbol->scope == 'L') ? symbolTable->find(symbol->section)->ordinal : symbol->ordinal;
+					currentSection->relocationTable.push_back(rel);
+				}
 				currentSection->addByte(symbol->offset & 0xFF); // da li se za glob simb dodaje 0 ili vrednost?
 				currentSection->addByte((symbol->offset >> 8) & 0xFF);
-
-				Relocation *rel = new Relocation();
-				rel->offset = currentSection->bytes.size();
-				rel->type = ABS;
-				rel->value = symbol->ordinal;
-				currentSection->relocationTable.push_back(rel);
 			}
 			else { // literal
 				int literal;
@@ -611,15 +615,13 @@ bool Assembler::processInstruction2(string word, std::istringstream& iss) {
 
 		if (op->rep == SYMBOL || op->rep == PCREL_SYMBOL) {
 			Symbol* symbol = symbolTable->find(op->value);
-			Relocation* rel = new Relocation();
-			rel->offset = currentSection->bytes.size();
-			rel->type = (op->rep == PCREL_SYMBOL) ? PC_REL : ABS; 
-			if (symbol->section == absSymbols->name)
-				rel->value = 0;
-			else 
-				rel->value = (symbol->scope == 'L') ?
-					symbolTable->find(symbol->section)->ordinal : symbol->ordinal;
-			currentSection->relocationTable.push_back(rel);
+			if (symbol->section != absSymbols->name) {
+				Relocation* rel = new Relocation();
+				rel->offset = currentSection->bytes.size();
+				rel->type = (op->rep == PCREL_SYMBOL) ? PC_REL : ABS; 
+				rel->value = (symbol->scope == 'L') ? symbolTable->find(symbol->section)->ordinal : symbol->ordinal;
+				currentSection->relocationTable.push_back(rel); 
+			}
 		}
 
 		if (op->bytes == 2) {
@@ -642,10 +644,13 @@ bool Assembler::processInstruction2(string word, std::istringstream& iss) {
 	}
 	case NOT: case AND: case OR: case XOR: case TEST: case SHL: case SHR: {
 		iss >> word;
-		word.pop_back();
+		if (instruction != NOT)
+			word.pop_back();
 		RegsDescr = (word[1] - '0') << 4;
-		iss >> word;
-		RegsDescr |= word[1] - '0';
+		if (instruction != NOT) {
+			iss >> word;
+			RegsDescr |= word[1] - '0';
+		}
 		currentSection->addByte(InstrDescr);
 		currentSection->addByte(RegsDescr);
 		return true;
@@ -671,15 +676,13 @@ bool Assembler::processInstruction2(string word, std::istringstream& iss) {
 
 		if (op->rep == SYMBOL || op->rep == PCREL_SYMBOL) {
 			Symbol* symbol = symbolTable->find(op->value);
-			Relocation* rel = new Relocation();
-			rel->offset = currentSection->bytes.size();
-			rel->type = (op->rep == PCREL_SYMBOL) ? PC_REL : ABS; 
-			if (symbol->section == absSymbols->name)
-				rel->value = 0;
-			else 
-				rel->value = (symbol->scope == 'L') ?
-					symbolTable->find(symbol->section)->ordinal : symbol->ordinal;
-			currentSection->relocationTable.push_back(rel);
+			if (symbol->section != absSymbols->name) {
+				Relocation* rel = new Relocation();
+				rel->offset = currentSection->bytes.size();
+				rel->type = (op->rep == PCREL_SYMBOL) ? PC_REL : ABS; 
+				rel->value = (symbol->scope == 'L') ? symbolTable->find(symbol->section)->ordinal : symbol->ordinal;
+				currentSection->relocationTable.push_back(rel); 
+			}
 		}
 
 		if (op->bytes == 2) {
@@ -691,6 +694,25 @@ bool Assembler::processInstruction2(string word, std::istringstream& iss) {
 	}
 	case PUSH:
 	case POP: {
+		iss >> word;
+		
+		// destination: regD, source: SP++
+		if (instruction == POP) {
+			RegsDescr = (word[1] - '0') << 4; 
+			RegsDescr |= 0x06; 
+			AddrMode = 0x40 | REGIND;
+		} 
+		// destination: --SP, source = regD
+		else {
+			RegsDescr = (word[1] - '0') & 0x0F;
+			RegsDescr |= 0x60;
+			AddrMode = 0x10 | REGIND;
+		}
+
+		currentSection->addByte(InstrDescr);
+		currentSection->addByte(RegsDescr);
+		currentSection->addByte(AddrMode);
+
 		return true;
 	}
 	case ILLEGAL: 
@@ -767,7 +789,7 @@ int8_t Assembler::getCode(Instructions instruction) {
 	if (instruction == TEST) return 0x84;
 	if (instruction == SHL) return 0x90;
 	if (instruction == SHR) return 0x91;
-	if (instruction == LDR) return 0xA0;
-	if (instruction == STR) return 0xB0;
+	if (instruction == LDR || instruction == POP) return 0xA0;
+	if (instruction == STR || instruction == PUSH) return 0xB0;
 	return 0xFF;
 }
