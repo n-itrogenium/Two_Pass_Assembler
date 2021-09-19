@@ -54,7 +54,7 @@ void Assembler::firstPass(std::ifstream &inputFile, std::ofstream &outputFile) {
 
 				Symbol* symbol = symbolTable->find(word);
 				if (!symbol) {
-					symbolTable->insert(word, currentSection, locationCounter, 'L');
+					symbolTable->insert(word, currentSection, locationCounter, 'L', false);
 					symbol = symbolTable->find(word);
 				}
 				else {
@@ -122,7 +122,7 @@ bool Assembler::processDirective1(string word, std::istringstream& iss) {
 			char scope = (directive == GLOBAL) ? 'G' : 'E';
 
 			if (!symbol) {
-				symbolTable->insert(word, nullptr, offset, scope);
+				symbolTable->insert(word, nullptr, offset, scope, false);
 				if (scope == 'E')
 					symbolTable->find(word)->defined = true;
 			}
@@ -149,7 +149,7 @@ bool Assembler::processDirective1(string word, std::istringstream& iss) {
 		return true;
 	}
 
-	case SECTION: { // proveriti za .text, .data itd.
+	case SECTION: {
 		if (!(iss >> word)) {
 			std::cerr << "ERROR! Expected a section name" << std::endl;
 			exit(3);
@@ -170,7 +170,7 @@ bool Assembler::processDirective1(string word, std::istringstream& iss) {
 
 		Section* newSection = new Section(sectionName);
 		sections[sectionName] = newSection;
-		symbolTable->insert(sectionName, newSection, 0, 'L');
+		symbolTable->insert(sectionName, newSection, 0, 'L', true);
 		symbolTable->find(sectionName)->defined = true;
 		if (currentSection) {
 			currentSection->size = locationCounter;
@@ -205,7 +205,7 @@ bool Assembler::processDirective1(string word, std::istringstream& iss) {
 			if (std::regex_match(word, std::regex("^[a-zA-Z_]+[a-zA-Z0-9_]*$"))) {
 				Symbol* symbol = symbolTable->find(word);
 				if (!symbol) {
-					symbolTable->insert(word, currentSection, 0, 'L');
+					symbolTable->insert(word, currentSection, 0, 'L', false);
 				}
 			}
 			else if (!std::regex_match(word, std::regex("^([0-9]+|0x[0-9A-Fa-f]+)$"))) {
@@ -271,7 +271,7 @@ bool Assembler::processDirective1(string word, std::istringstream& iss) {
 		if (std::regex_match(word, std::regex("^[a-zA-Z_]+[a-zA-Z0-9_]*$"))) {
 			Symbol* symbol = symbolTable->find(word);
 			if (!symbol) {
-				symbolTable->insert(word, absSymbols, 0, 'L');
+				symbolTable->insert(word, absSymbols, 0, 'L', false);
 				symbol = symbolTable->find(word);
 			}
 			else if (symbol->scope == 'E') {
@@ -520,7 +520,7 @@ bool Assembler::processDirective2(string word, std::istringstream& iss) {
 					rel->value = (symbol->scope == 'L') ? symbolTable->find(symbol->section)->ordinal : symbol->ordinal;
 					currentSection->relocationTable.push_back(rel);
 				}
-				currentSection->addByte(symbol->offset & 0xFF); // da li se za glob simb dodaje 0 ili vrednost?
+				currentSection->addByte(symbol->offset & 0xFF); 
 				currentSection->addByte((symbol->offset >> 8) & 0xFF);
 			}
 			else { // literal
@@ -602,8 +602,7 @@ bool Assembler::processInstruction2(string word, std::istringstream& iss) {
 		while (iss >> word) {
 			operand.append(word);
 		}
-		bool isJump = (instruction == CALL) ? false : true;
-		Operand* op = Operation::analyzeOperand(operand, isJump, symbolTable);
+		Operand* op = Operation::analyzeOperand(operand, true, symbolTable);
 		RegsDescr = 0xF0 | op->reg;
 		AddrMode = op->addrMode & 0x0F; // 0 => UUUU
 		DataHigh = op->dataHigh;

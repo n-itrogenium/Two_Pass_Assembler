@@ -20,9 +20,10 @@ public:
 
 class SymbolTable {
 public:
+	std::map<string, Symbol*> sectionTable;
 	std::map<string, Symbol*> table;
 	Symbol* find(string name);
-	void insert(string name, Section* section, int locationCounter, char scope);
+	void insert(string name, Section* section, int locationCounter, char scope, bool isSection);
 	bool isDefined();
 	void printTable(std::ofstream &outfile);
 };

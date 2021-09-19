@@ -18,7 +18,7 @@ void Section::addByte(int8_t newByte) {
 }
 
 void Section::printRelocationTable(std::ofstream& outfile, std::map<string, Section*> sections) {
-	outfile << "===========================RELOCATION TABLE===========================" << endl;
+	outfile << "======================RELOCATION TABLE======================" << endl;
 
 	std::map<string, Section*>::iterator i;
 	for (i = sections.begin(); i != sections.end(); i++) {
@@ -28,7 +28,7 @@ void Section::printRelocationTable(std::ofstream& outfile, std::map<string, Sect
 			outfile << "Section: " << section->name << endl;
 			outfile << setw(10) << setfill(' ') << "Offset";
 			outfile << setw(15) << setfill(' ') << "Rel. type";
-			outfile << setw(10) << setfill(' ') << "Ordinal"; // vrednost?
+			outfile << setw(10) << setfill(' ') << "Ordinal";
 			outfile << endl << "-----------------------------------" << endl;
 
 			for (int j = 0; j < section->relocationTable.size(); j++) {
@@ -44,7 +44,7 @@ void Section::printRelocationTable(std::ofstream& outfile, std::map<string, Sect
 }
 
 void Section::printSections(std::ostream& outfile, std::map<string, Section*> sections) {
-	outfile << "===============================SECTIONS===============================" << endl;
+	outfile << "==========================SECTIONS==========================" << endl;
 	std::map<string, Section*>::iterator i;
 	for (i = sections.begin(); i != sections.end(); i++) {
 		Section* section = i->second;
@@ -54,11 +54,6 @@ void Section::printSections(std::ostream& outfile, std::map<string, Section*> se
 			outfile << "-----------------------------------------------" << endl;
 			std::stringstream sstream;
 			for (int j = 0; j < section->size; j++) {
-				/*int high = (section->bytes[j] >> 4) & 0x0F;
-				int low = section->bytes[j] & 0x0F;
-				sstream << std::hex << high << low;
-				std::string stringBytes(sstream.str());
-				outfile << stringBytes << " ";*/
 				outfile << std::hex << setw(2) << setfill('0') << ((int) section->bytes[j] & 0xFF);
 				if ((j+1) % 16 == 0)
 					outfile << endl;

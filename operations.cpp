@@ -43,13 +43,13 @@ Operand* Operation::analyzeOperand(string operand, bool isJump, SymbolTable* sym
 				op->rep = SYMBOL;
 				Symbol* symbol = symbolTable->find(operand);
 				if (symbol) {
-					if (symbol->defined) { // sta ako je eksterni?
+					if (symbol->defined) { 
 						op->dataHigh = (symbol->offset >> 8) & 0xFF;
 						op->dataLow = symbol->offset & 0xFF;
 					}
 				}
 				else {
-					symbolTable->insert(operand, nullptr, 0, 'L');
+					symbolTable->insert(operand, nullptr, 0, 'L', false);
 				}
 			}
 			else {
@@ -109,7 +109,7 @@ Operand* Operation::analyzeOperand(string operand, bool isJump, SymbolTable* sym
 					}
 				}
 				else {
-					symbolTable->insert(op->value, nullptr, 0, 'L');
+					symbolTable->insert(op->value, nullptr, 0, 'L', false);
 				}
 			}
 		// [<reg>]
@@ -163,7 +163,7 @@ Operand* Operation::analyzeOperand(string operand, bool isJump, SymbolTable* sym
 				}
 			}
 			else {
-				symbolTable->insert(operand, nullptr, 0, 'L');
+				symbolTable->insert(operand, nullptr, 0, 'L', false);
 			}
 		}
 		else if (operand[0] == '[') {
@@ -215,7 +215,7 @@ Operand* Operation::analyzeOperand(string operand, bool isJump, SymbolTable* sym
 						}
 					}
 					else {
-						symbolTable->insert(op->value, nullptr, 0, 'L');
+						symbolTable->insert(op->value, nullptr, 0, 'L', false);
 					}
 				}
 			// *[<reg>]
@@ -251,7 +251,7 @@ Operand* Operation::analyzeOperand(string operand, bool isJump, SymbolTable* sym
 			}
 		}
 		else {
-			symbolTable->insert(op->value, nullptr, 0, 'L');
+			symbolTable->insert(op->value, nullptr, 0, 'L', false);
 		}
 		result = op;
 		break;
@@ -294,7 +294,7 @@ Operand* Operation::analyzeOperand(string operand, bool isJump, SymbolTable* sym
 				}
 			}
 			else {
-				symbolTable->insert(operand, nullptr, 0, 'L');
+				symbolTable->insert(operand, nullptr, 0, 'L', false);
 			}
 		}
 		else {
