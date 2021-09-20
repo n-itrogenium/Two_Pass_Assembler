@@ -43,12 +43,14 @@ void SymbolTable::printTable(std::ofstream &outfile) {
 	outfile << std::endl << "------------------------------------------------------------" << std::endl;
 
 	std::map<string, Symbol*>::iterator i;
+	int ordinal = 1;
 	for (i = sectionTable.begin(); i != sectionTable.end(); i++) {
 		char scope = (i->second->scope == 'E') ? 'G' : i->second->scope;
 		outfile << setw(15) << setfill(' ') << i->second->name;
 		outfile << setw(15) << setfill(' ') << i->second->section;
 		outfile << setw(10) << setfill(' ') << i->second->offset;
 		outfile << setw(10) << setfill(' ') << scope;
+		i->second->ordinal = ordinal++;
 		outfile << setw(10) << setfill(' ') << i->second->ordinal;
 		outfile << std::endl;
 	}
@@ -58,6 +60,7 @@ void SymbolTable::printTable(std::ofstream &outfile) {
 		outfile << setw(15) << setfill(' ') << i->second->section;
 		outfile << setw(10) << setfill(' ') << i->second->offset;
 		outfile << setw(10) << setfill(' ') << scope;
+		i->second->ordinal = ordinal++;
 		outfile << setw(10) << setfill(' ') << i->second->ordinal;
 		outfile << std::endl;
 	}

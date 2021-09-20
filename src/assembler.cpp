@@ -11,9 +11,9 @@
 SymbolTable* Assembler::symbolTable = new SymbolTable();
 int Assembler::locationCounter = 0;
 Section* Assembler::currentSection = nullptr;
-Section* Assembler::absSymbols = new Section("absSymb");
+Section* Assembler::dataSection = new Section("data");
 bool Assembler::end = false;
-std::map<string, Section*> Assembler::sections = { {"absSymb", Assembler::absSymbols} };
+std::map<string, Section*> Assembler::sections = { };
 
 void Assembler::firstPass(std::ifstream &inputFile, std::ofstream &outputFile) {
 	std::cout << "First pass starts!" << std::endl;
@@ -271,14 +271,15 @@ bool Assembler::processDirective1(string word, std::istringstream& iss) {
 		if (std::regex_match(word, std::regex("^[a-zA-Z_]+[a-zA-Z0-9_]*$"))) {
 			Symbol* symbol = symbolTable->find(word);
 			if (!symbol) {
-				symbolTable->insert(word, absSymbols, 0, 'L', false);
+				symbolTable->insert(word, dataSection, 0, 'L', false);
 				symbol = symbolTable->find(word);
 			}
 			else if (symbol->scope == 'E') {
 				std::cerr << "ERROR! Symbol already defined externally" << std::endl;
 				exit(3);
-			}
+			} 
 			symbol->defined = true;
+			symbol->section = dataSection->name;
 			if (!(iss >> word)) {
 				std::cerr << "ERROR! Expected a token" << std::endl;
 				exit(3);
@@ -295,11 +296,11 @@ bool Assembler::processDirective1(string word, std::istringstream& iss) {
 				else {
 					literal = stoi(word);
 				}
-				symbol->offset = absSymbols->size;
-				absSymbols->addByte(literal & 0xFF);
+				symbol->offset = literal;
+				/*absSymbols->addByte(literal & 0xFF);
 				if ((literal >> 8) & 0xFF != 0)
 					absSymbols->addByte((literal >> 8) & 0xFF);
-				absSymbols->size = absSymbols->bytes.size();
+				absSymbols->size = absSymbols->bytes.size();*/
 			}
 			else {
 				std::cerr << "ERROR! Expected a literal" << std::endl;
@@ -513,7 +514,7 @@ bool Assembler::processDirective2(string word, std::istringstream& iss) {
 				word.pop_back(); // Oduzimamo ','
 			if (std::regex_match(word, std::regex("^[a-zA-Z_]+[a-zA-Z0-9_]*$"))) { // symbol
 				Symbol* symbol = symbolTable->find(word);
-				if (symbol->section != absSymbols->name) {
+				if (symbol->section != dataSection->name) {
 					Relocation *rel = new Relocation();
 					rel->offset = currentSection->bytes.size();
 					rel->type = ABS;
@@ -614,7 +615,7 @@ bool Assembler::processInstruction2(string word, std::istringstream& iss) {
 
 		if (op->rep == SYMBOL || op->rep == PCREL_SYMBOL) {
 			Symbol* symbol = symbolTable->find(op->value);
-			if (symbol->section != absSymbols->name) {
+			if (symbol->section != dataSection->name) {
 				Relocation* rel = new Relocation();
 				rel->offset = currentSection->bytes.size();
 				rel->type = (op->rep == PCREL_SYMBOL) ? PC_REL : ABS; 
@@ -675,7 +676,7 @@ bool Assembler::processInstruction2(string word, std::istringstream& iss) {
 
 		if (op->rep == SYMBOL || op->rep == PCREL_SYMBOL) {
 			Symbol* symbol = symbolTable->find(op->value);
-			if (symbol->section != absSymbols->name) {
+			if (symbol->section != dataSection->name) {
 				Relocation* rel = new Relocation();
 				rel->offset = currentSection->bytes.size();
 				rel->type = (op->rep == PCREL_SYMBOL) ? PC_REL : ABS; 
