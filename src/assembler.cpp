@@ -279,6 +279,7 @@ bool Assembler::processDirective1(string word, std::istringstream& iss) {
 				exit(3);
 			} 
 			symbol->defined = true;
+			symbol->absolute = true;
 			symbol->section = dataSection->name;
 			if (!(iss >> word)) {
 				std::cerr << "ERROR! Expected a token" << std::endl;
@@ -514,7 +515,7 @@ bool Assembler::processDirective2(string word, std::istringstream& iss) {
 				word.pop_back(); // Oduzimamo ','
 			if (std::regex_match(word, std::regex("^[a-zA-Z_]+[a-zA-Z0-9_]*$"))) { // symbol
 				Symbol* symbol = symbolTable->find(word);
-				if (symbol->section != dataSection->name) {
+				if (!symbol->absolute) {
 					Relocation *rel = new Relocation();
 					rel->offset = currentSection->bytes.size();
 					rel->type = ABS;
@@ -615,7 +616,7 @@ bool Assembler::processInstruction2(string word, std::istringstream& iss) {
 
 		if (op->rep == SYMBOL || op->rep == PCREL_SYMBOL) {
 			Symbol* symbol = symbolTable->find(op->value);
-			if (symbol->section != dataSection->name) {
+			if (!symbol->absolute) {
 				Relocation* rel = new Relocation();
 				rel->offset = currentSection->bytes.size();
 				rel->type = (op->rep == PCREL_SYMBOL) ? PC_REL : ABS; 
@@ -625,8 +626,8 @@ bool Assembler::processInstruction2(string word, std::istringstream& iss) {
 		}
 
 		if (op->bytes == 2) {
-			currentSection->addByte(DataLow);
 			currentSection->addByte(DataHigh);
+			currentSection->addByte(DataLow);
 		}
 
 		return true;
@@ -676,7 +677,7 @@ bool Assembler::processInstruction2(string word, std::istringstream& iss) {
 
 		if (op->rep == SYMBOL || op->rep == PCREL_SYMBOL) {
 			Symbol* symbol = symbolTable->find(op->value);
-			if (symbol->section != dataSection->name) {
+			if (!symbol->absolute) {
 				Relocation* rel = new Relocation();
 				rel->offset = currentSection->bytes.size();
 				rel->type = (op->rep == PCREL_SYMBOL) ? PC_REL : ABS; 
@@ -686,8 +687,8 @@ bool Assembler::processInstruction2(string word, std::istringstream& iss) {
 		}
 
 		if (op->bytes == 2) {
-			currentSection->addByte(DataLow);
 			currentSection->addByte(DataHigh);
+			currentSection->addByte(DataLow);
 		}
 
 		return true;

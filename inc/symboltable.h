@@ -15,6 +15,7 @@ public:
 	int offset;
 	char scope;
 	bool defined;
+	bool absolute;
 	Symbol(string name, Section* section, int offset, char scope);
 };
 

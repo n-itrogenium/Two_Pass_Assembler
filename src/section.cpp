@@ -32,7 +32,7 @@ void Section::printRelocationTable(std::ofstream& outfile, std::map<string, Sect
 			outfile << endl << "-----------------------------------" << endl;
 
 			for (int j = 0; j < section->relocationTable.size(); j++) {
-				string relType = (section->relocationTable[j]->type == ABS) ? "R_X86_64_32" : "R_X86_64_PC32";
+				string relType = (section->relocationTable[j]->type == ABS) ? "Absolute" : "PC Relative";
 				outfile << setw(10) << setfill(' ') << section->relocationTable[j]->offset;
 				outfile << setw(15) << setfill(' ') << relType;
 				outfile << setw(10) << setfill(' ') << section->relocationTable[j]->value << endl;

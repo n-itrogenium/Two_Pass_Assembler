@@ -76,4 +76,5 @@ Symbol::Symbol(string name, Section* section, int offset, char scope) {
 	else
 		this->section = "?";
 	this->defined = false;
+	this->absolute = false;
 }
