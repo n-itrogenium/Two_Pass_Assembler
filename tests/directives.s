@@ -3,13 +3,11 @@
 .global b
 .extern f
 
-.section first
+.section text
 .word c
 .equ a, 0
 .skip 4
 b: .word f
-
-.section second
 .equ c, 2
 .skip 1
 .word e

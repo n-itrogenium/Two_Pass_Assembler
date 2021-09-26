@@ -17,5 +17,6 @@
 .section data
 	.skip 4
 	a: .word 0xFC
+	.word b
 
 .end
