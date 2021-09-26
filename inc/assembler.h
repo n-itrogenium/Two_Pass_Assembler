@@ -21,7 +21,7 @@ class Assembler {
 public:
 	static SymbolTable* symbolTable;
 	static int locationCounter;
-	static Section *currentSection, *dataSection;
+	static Section *currentSection;
 	static std::map<string, Section*> sections;
 	static bool end;
 	static void firstPass(std::ifstream &inputFile, std::ofstream &outputFile);

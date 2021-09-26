@@ -26,7 +26,7 @@ public:
 	Symbol* find(string name);
 	void insert(string name, Section* section, int locationCounter, char scope, bool isSection);
 	bool isDefined();
-	void printTable(std::ofstream &outfile);
+	void printTable(std::ofstream &outfile, std::map<string, Section*> sections);
 };
 
 #endif

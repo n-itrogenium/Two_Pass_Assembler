@@ -18,7 +18,7 @@ void Section::addByte(int8_t newByte) {
 }
 
 void Section::printRelocationTable(std::ofstream& outfile, std::map<string, Section*> sections) {
-	outfile << "======================RELOCATION TABLE======================" << endl;
+	outfile << "===========================RELOCATION TABLE===========================" << endl;
 
 	std::map<string, Section*>::iterator i;
 	for (i = sections.begin(); i != sections.end(); i++) {
@@ -27,14 +27,14 @@ void Section::printRelocationTable(std::ofstream& outfile, std::map<string, Sect
 		if (!section->relocationTable.empty()) {
 			outfile << "Section: " << section->name << endl;
 			outfile << setw(10) << setfill(' ') << "Offset";
-			outfile << setw(15) << setfill(' ') << "Rel. type";
+			outfile << setw(12) << setfill(' ') << "Rel. type";
 			outfile << setw(10) << setfill(' ') << "Ordinal";
 			outfile << endl << "-----------------------------------" << endl;
 
 			for (int j = 0; j < section->relocationTable.size(); j++) {
-				string relType = (section->relocationTable[j]->type == ABS) ? "Absolute" : "PC Relative";
+				string relType = (section->relocationTable[j]->type == ABS) ? "ABS" : "PC_REL";
 				outfile << setw(10) << setfill(' ') << section->relocationTable[j]->offset;
-				outfile << setw(15) << setfill(' ') << relType;
+				outfile << setw(12) << setfill(' ') << relType;
 				outfile << setw(10) << setfill(' ') << section->relocationTable[j]->value << endl;
 			}
 
@@ -44,7 +44,7 @@ void Section::printRelocationTable(std::ofstream& outfile, std::map<string, Sect
 }
 
 void Section::printSections(std::ostream& outfile, std::map<string, Section*> sections) {
-	outfile << "==========================SECTIONS==========================" << endl;
+	outfile << "===============================SECTIONS===============================" << endl;
 	std::map<string, Section*>::iterator i;
 	for (i = sections.begin(); i != sections.end(); i++) {
 		Section* section = i->second;

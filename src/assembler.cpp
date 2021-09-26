@@ -11,7 +11,6 @@
 SymbolTable* Assembler::symbolTable = new SymbolTable();
 int Assembler::locationCounter = 0;
 Section* Assembler::currentSection = nullptr;
-Section* Assembler::dataSection = new Section("data");
 bool Assembler::end = false;
 std::map<string, Section*> Assembler::sections = { };
 
@@ -83,7 +82,7 @@ void Assembler::firstPass(std::ifstream &inputFile, std::ofstream &outputFile) {
 		}
 	}
 
-	symbolTable->printTable(outputFile);
+	symbolTable->printTable(outputFile, sections);
 
 	if (!symbolTable->isDefined()) {
 		std::cerr << "ERROR! Symbols not defined" << std::endl;
@@ -271,7 +270,7 @@ bool Assembler::processDirective1(string word, std::istringstream& iss) {
 		if (std::regex_match(word, std::regex("^[a-zA-Z_]+[a-zA-Z0-9_]*$"))) {
 			Symbol* symbol = symbolTable->find(word);
 			if (!symbol) {
-				symbolTable->insert(word, dataSection, 0, 'L', false);
+				symbolTable->insert(word, nullptr, 0, 'L', false);
 				symbol = symbolTable->find(word);
 			}
 			else if (symbol->scope == 'E') {
@@ -280,7 +279,7 @@ bool Assembler::processDirective1(string word, std::istringstream& iss) {
 			} 
 			symbol->defined = true;
 			symbol->absolute = true;
-			symbol->section = dataSection->name;
+			symbol->section = "abs";
 			if (!(iss >> word)) {
 				std::cerr << "ERROR! Expected a token" << std::endl;
 				exit(3);
@@ -519,7 +518,7 @@ bool Assembler::processDirective2(string word, std::istringstream& iss) {
 					Relocation *rel = new Relocation();
 					rel->offset = currentSection->bytes.size();
 					rel->type = ABS;
-					rel->value = (symbol->scope == 'L') ? symbolTable->find(symbol->section)->ordinal : symbol->ordinal;
+					rel->value = (symbol->scope != 'E') ? symbolTable->find(symbol->section)->ordinal : symbol->ordinal;
 					currentSection->relocationTable.push_back(rel);
 				}
 				currentSection->addByte(symbol->offset & 0xFF); 
@@ -620,7 +619,7 @@ bool Assembler::processInstruction2(string word, std::istringstream& iss) {
 				Relocation* rel = new Relocation();
 				rel->offset = currentSection->bytes.size();
 				rel->type = (op->rep == PCREL_SYMBOL) ? PC_REL : ABS; 
-				rel->value = (symbol->scope == 'L') ? symbolTable->find(symbol->section)->ordinal : symbol->ordinal;
+				rel->value = (symbol->scope != 'E') ? symbolTable->find(symbol->section)->ordinal : symbol->ordinal;
 				currentSection->relocationTable.push_back(rel); 
 			}
 		}
@@ -681,7 +680,7 @@ bool Assembler::processInstruction2(string word, std::istringstream& iss) {
 				Relocation* rel = new Relocation();
 				rel->offset = currentSection->bytes.size();
 				rel->type = (op->rep == PCREL_SYMBOL) ? PC_REL : ABS; 
-				rel->value = (symbol->scope == 'L') ? symbolTable->find(symbol->section)->ordinal : symbol->ordinal;
+				rel->value = (symbol->scope != 'E') ? symbolTable->find(symbol->section)->ordinal : symbol->ordinal;
 				currentSection->relocationTable.push_back(rel); 
 			}
 		}

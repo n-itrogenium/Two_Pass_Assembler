@@ -33,14 +33,15 @@ bool SymbolTable::isDefined() {
 	return true;
 }
 
-void SymbolTable::printTable(std::ofstream &outfile) {
-	outfile << "=======================SYMBOL TABLE=========================" << std::endl;
+void SymbolTable::printTable(std::ofstream &outfile, std::map<string, Section*> sections) {
+	outfile << "============================SYMBOL TABLE==============================" << std::endl;
 	outfile << setw(15) << setfill(' ') << "Label";
 	outfile << setw(15) << setfill(' ') << "Section";
-	outfile << setw(10) << setfill(' ') << "Offset";
+	outfile << setw(10) << setfill(' ') << "Value";
+	outfile << setw(10) << setfill(' ') << "Size";
 	outfile << setw(10) << setfill(' ') << "Scope";
 	outfile << setw(10) << setfill(' ') << "Ordinal";
-	outfile << std::endl << "------------------------------------------------------------" << std::endl;
+	outfile << std::endl << "----------------------------------------------------------------------" << std::endl;
 
 	std::map<string, Symbol*>::iterator i;
 	int ordinal = 1;
@@ -48,7 +49,8 @@ void SymbolTable::printTable(std::ofstream &outfile) {
 		char scope = (i->second->scope == 'E') ? 'G' : i->second->scope;
 		outfile << setw(15) << setfill(' ') << i->second->name;
 		outfile << setw(15) << setfill(' ') << i->second->section;
-		outfile << setw(10) << setfill(' ') << i->second->offset;
+		outfile << setw(10) << setfill(' ') << std::hex << i->second->offset << std::dec;
+		outfile << setw(10) << setfill(' ') << sections[i->second->name]->size;
 		outfile << setw(10) << setfill(' ') << scope;
 		i->second->ordinal = ordinal++;
 		outfile << setw(10) << setfill(' ') << i->second->ordinal;
@@ -58,8 +60,8 @@ void SymbolTable::printTable(std::ofstream &outfile) {
 		char scope = (i->second->scope == 'E') ? 'G' : i->second->scope;
 		outfile << setw(15) << setfill(' ') << i->second->name;
 		outfile << setw(15) << setfill(' ') << i->second->section;
-		outfile << setw(10) << setfill(' ') << i->second->offset;
-		outfile << setw(10) << setfill(' ') << scope;
+		outfile << setw(10) << setfill(' ') << std::hex << i->second->offset << std::dec;
+		outfile << setw(20) << setfill(' ') << scope;
 		i->second->ordinal = ordinal++;
 		outfile << setw(10) << setfill(' ') << i->second->ordinal;
 		outfile << std::endl;
