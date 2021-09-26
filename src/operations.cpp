@@ -238,11 +238,12 @@ Operand* Operation::analyzeOperand(string operand, bool isJump, SymbolTable* sym
 			exit(3);
 		}
 		op->rep = PCREL_SYMBOL;
-		op->addrMode = isJump ? IMMED : MEMDIR;
+		op->addrMode = isJump ? REGDIRPOM : REGINDPOM;
 		op->dataHigh = (-2 >> 8) & 0xFF;
 		op->dataLow = -2 & 0xFF;
 		op->bytes = 2;
 		op->value = operand;
+		op->reg = 7;
 		Symbol* symbol = symbolTable->find(operand);
 		if (symbol) {
 			if (symbol->defined) {

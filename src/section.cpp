@@ -29,7 +29,7 @@ void Section::printRelocationTable(std::ofstream& outfile, std::map<string, Sect
 			outfile << setw(10) << setfill(' ') << "Offset";
 			outfile << setw(12) << setfill(' ') << "Rel. type";
 			outfile << setw(10) << setfill(' ') << "Ordinal";
-			outfile << endl << "-----------------------------------" << endl;
+			outfile << endl << "--------------------------------" << endl;
 
 			for (int j = 0; j < section->relocationTable.size(); j++) {
 				string relType = (section->relocationTable[j]->type == ABS) ? "ABS" : "PC_REL";
