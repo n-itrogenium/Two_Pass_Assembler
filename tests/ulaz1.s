@@ -13,5 +13,6 @@ c:  .word a
     ldr r1, $0x05
 a:  ldr r0, %b
 b:  .word c
+    jmp %a
 
 .end

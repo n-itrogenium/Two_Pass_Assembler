@@ -615,13 +615,20 @@ bool Assembler::processInstruction2(string word, std::istringstream& iss) {
 
 		if (op->rep == SYMBOL || op->rep == PCREL_SYMBOL) {
 			Symbol* symbol = symbolTable->find(op->value);
-			if (!symbol->absolute) {
-				Relocation* rel = new Relocation();
-				rel->offset = currentSection->bytes.size();
-				rel->type = (op->rep == PCREL_SYMBOL) ? PC_REL : ABS; 
-				rel->value = (symbol->scope != 'E') ? symbolTable->find(symbol->section)->ordinal : symbol->ordinal;
-				currentSection->relocationTable.push_back(rel); 
+			if (op->rep == PCREL_SYMBOL && symbol->section == currentSection->name) { // PC rel, same section
+				int data = ((DataHigh << 8) | DataLow) & 0xFFFF;
+				data = data - currentSection->bytes.size();
+				DataHigh = (data >> 8) & 0xFF;
+				DataLow = data & 0xFF;
 			}
+			else
+				if (!symbol->absolute) {
+					Relocation* rel = new Relocation();
+					rel->offset = currentSection->bytes.size();
+					rel->type = (op->rep == PCREL_SYMBOL) ? PC_REL : ABS; 
+					rel->value = (symbol->scope != 'E') ? symbolTable->find(symbol->section)->ordinal : symbol->ordinal;
+					currentSection->relocationTable.push_back(rel); 
+				}
 		}
 
 		if (op->bytes == 2) {
@@ -676,13 +683,20 @@ bool Assembler::processInstruction2(string word, std::istringstream& iss) {
 
 		if (op->rep == SYMBOL || op->rep == PCREL_SYMBOL) {
 			Symbol* symbol = symbolTable->find(op->value);
-			if (!symbol->absolute) {
-				Relocation* rel = new Relocation();
-				rel->offset = currentSection->bytes.size();
-				rel->type = (op->rep == PCREL_SYMBOL) ? PC_REL : ABS; 
-				rel->value = (symbol->scope != 'E') ? symbolTable->find(symbol->section)->ordinal : symbol->ordinal;
-				currentSection->relocationTable.push_back(rel); 
+			if (op->rep == PCREL_SYMBOL && symbol->section == currentSection->name) { // PC rel, same section
+				int data = ((DataHigh << 8) | DataLow) & 0xFFFF;
+				data = data - currentSection->bytes.size();
+				DataHigh = (data >> 8) & 0xFF;
+				DataLow = data & 0xFF;
 			}
+			else
+				if (!symbol->absolute) {
+					Relocation* rel = new Relocation();
+					rel->offset = currentSection->bytes.size();
+					rel->type = (op->rep == PCREL_SYMBOL) ? PC_REL : ABS; 
+					rel->value = (symbol->scope != 'E') ? symbolTable->find(symbol->section)->ordinal : symbol->ordinal;
+					currentSection->relocationTable.push_back(rel); 
+				}
 		}
 
 		if (op->bytes == 2) {
